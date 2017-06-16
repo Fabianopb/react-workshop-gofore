@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import axios from 'axios';
 import { getRandomCountry } from './ducks/rounds';
 import RadioPads from './components/Radio-pads';
+import Button from './components/Button';
 import './App.css';
 
 // this is a little helper you can use if you like, or erase and make your own
@@ -45,6 +46,10 @@ class App extends Component {
   };
 
   componentWillMount() {
+    this._getCountries();
+  }
+
+  _getCountries() {
     axios.get('/api/countries').then(response => {
       this.setState({ countries: response.data }, this._getChoices)
     });
@@ -68,12 +73,25 @@ class App extends Component {
     this.setState({ resultMessage });
   }
 
+  _restartGame = () => {
+    this.setState({
+      countries: {},
+      choices: [],
+      correctAnswer: {
+        code: null,
+        choice: null
+      },
+      resultMessage: null
+    });
+    this._getCountries();
+  }
+
   render() {
 
     const { code, choice } = this.state.correctAnswer;
 
     const flagImage = this.state.correctAnswer.code ? (
-        <img src={ `/flags/${ code }.png` } alt={ choice[code] } />
+        <img className="flag-image" src={ `/flags/${ code }.png` } alt={ choice[code] } />
     ) : null;
 
     return (
@@ -90,9 +108,13 @@ class App extends Component {
         <nav><h4 style={{color: '#fff'}}>Cool nav bar here</h4></nav>
 
         <main>
+          <div className="title-question">What country this flag belongs to?</div>
           { flagImage }
           { this.state.resultMessage ? (
-            this.state.resultMessage
+            <div>
+              <p>{ this.state.resultMessage }</p>
+              <Button children={ 'Restart the game?' } onClick={ this._restartGame } />
+            </div>
           ) : (
             <RadioPads
               options={ this.state.choices.map(choice => choice.choice) }

@@ -75,3 +75,12 @@ main {
 .flag > .fa.fa-flag-o {
   font-size: 50px;
 }
+
+.title-question {
+  font-size: 1.2rem;
+  padding: 10px;
+}
+
+.flag-image {
+  padding-bottom: 30px;
+}
