@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import axios from 'axios';
 import { getRandomCountry } from './ducks/rounds';
+import RadioPads from './components/Radio-pads';
 import './App.css';
 
 // this is a little helper you can use if you like, or erase and make your own
@@ -35,25 +36,44 @@ class App extends Component {
 
   state = {
     countries: {},
-    choices: null,
-    correctAnswer: null,
-    activeFlag: null
+    choices: [],
+    correctAnswer: {
+      code: null,
+      choice: null
+    },
+    resultMessage: null
   };
 
   componentWillMount() {
     axios.get('/api/countries').then(response => {
-      this.setState({ countries: response.data }, this._setRandomFlag)
+      this.setState({ countries: response.data }, this._getChoices)
     });
   }
 
-  _setRandomFlag() {
-    this.setState({ activeFlag: getRandomCountry(this.state.countries) });
+  _getChoices() {
+    const choices = [];
+    while (choices.length < 3) {
+      const randomCountry = getRandomCountry(this.state.countries);
+      if (choices.map(choice => choice.code).indexOf(randomCountry.code) === -1) {
+        choices.push(randomCountry);
+      }
+    }
+    this.setState({ choices });
+    const randomIndex = Math.floor(Math.random() * choices.length);
+    this.setState({ correctAnswer: choices[randomIndex] });
+  }
+
+  _handleCountrySelection = (countryCode) => {
+    const resultMessage = countryCode === this.state.correctAnswer.code ? 'Correct answer!' : 'Wrong answer!';
+    this.setState({ resultMessage });
   }
 
   render() {
 
-    const flagImage = this.state.activeFlag ? (
-        <img src={ `/flags/${ this.state.activeFlag.code }.png` }></img>
+    const { code, choice } = this.state.correctAnswer;
+
+    const flagImage = this.state.correctAnswer.code ? (
+        <img src={ `/flags/${ code }.png` } alt={ choice[code] } />
     ) : null;
 
     return (
@@ -71,6 +91,14 @@ class App extends Component {
 
         <main>
           { flagImage }
+          { this.state.resultMessage ? (
+            this.state.resultMessage
+          ) : (
+            <RadioPads
+              options={ this.state.choices.map(choice => choice.choice) }
+              handleSelection= { this._handleCountrySelection }
+              />
+          ) }
         </main>
       </div>
     )
