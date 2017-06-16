@@ -121,6 +121,7 @@ class App extends Component {
               handleSelection= { this._handleCountrySelection }
               />
           ) }
+          <button onClick={this.props.testActionCreator}>test action</button>
         </main>
       </div>
     )
