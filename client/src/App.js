@@ -41,7 +41,7 @@ class App extends Component {
   };
 
   componentWillMount() {
-    axios.get('http://localhost:3000/api/countries').then(response => {
+    axios.get('/api/countries').then(response => {
       this.setState({ countries: response.data }, this._setRandomFlag)
     });
   }
@@ -53,7 +53,7 @@ class App extends Component {
   render() {
 
     const flagImage = this.state.activeFlag ? (
-        <img src={ `http://localhost:3000/flags/${ this.state.activeFlag.code }.png` }></img>
+        <img src={ `/flags/${ this.state.activeFlag.code }.png` }></img>
     ) : null;
 
     return (
