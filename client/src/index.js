@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import axios from 'axios'
 import App from './App'
 import './index.css'
 import registerServiceWorker from './registerServiceWorker'
@@ -8,7 +9,10 @@ import {Provider, connect} from 'react-redux'
 import createSagaMiddleware from 'redux-saga'
 import {
   put,
-  takeEvery
+  take,
+  takeEvery,
+  call,
+  all
 } from 'redux-saga/effects'
 // import reducer from './reducer.js'
 
@@ -23,18 +27,51 @@ function* testSaga() {
   yield takeEvery('TEST_ACTION', () => console.log('yey'))
 }
 
+function* fetchCountriesSaga() {
+  yield take('FETCH_COUNTRIES')
+  const countries = yield call(() => axios.get('/api/countries'));    
+  yield put(countriesLoaded(countries.data))
+  
+      // .then(response => {
+        // this.setState({ countries: response.data }, this._getChoices)
+
+      // axios.get('/api/countries').then(response => {
+    //   this.setState({ countries: response.data }, this._getChoices)
+    // });
+}
+
+function* rootSaga() {
+  yield all([
+    testSaga(),
+    fetchCountriesSaga()
+  ])
+}
+
 const testActionCreator = () => {
   return {
     type: 'TEST_ACTION'
   }
 }
 
+const fetchCountries = () => {
+  return {
+    type: 'FETCH_COUNTRIES'
+  }
+}
+
+const countriesLoaded = (payload) => {
+  return { type: 'COUNTRIES_LOADED', payload }
+}
+
+
+
 // setInterval(() => {
 //   mockActionCreator()
 // }, 3000)
 
 const initialState = {
-  test: 1
+  test: 1,
+  countries: {}
 }
 
 const testReducer = (test = initialState.test, action) => {
@@ -45,8 +82,16 @@ const testReducer = (test = initialState.test, action) => {
   return test
 }
 
+const countryReducer = (countries = initialState.countries, action) => {
+  if (action.type === 'COUNTRIES_LOADED') {
+    return action.payload
+  }
+  return countries
+}
+
 const rootReducer = combineReducers({
-  test: testReducer
+  test: testReducer,
+  countries: countryReducer
 })
 
 const store = createStore(
@@ -56,18 +101,20 @@ const store = createStore(
 
 const mapStateToProps = (state) => {
   return {
-    test: state.test
+    test: state.test,
+    countries: state.countries
   }
 }
 
 const mapDispatchToProps = (dispatch) => 
   bindActionCreators({ 
-    testActionCreator 
+    testActionCreator,
+    fetchCountries
   }, dispatch)
 
 const ConnectedApp = connect(mapStateToProps, mapDispatchToProps)(App)
 
-sagaMiddleware.run(testSaga)
+sagaMiddleware.run(rootSaga)
 
 ReactDOM.render(
   <Provider store={store}>

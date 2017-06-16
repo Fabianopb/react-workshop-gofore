@@ -46,13 +46,7 @@ class App extends Component {
   };
 
   componentWillMount() {
-    this._getCountries();
-  }
-
-  _getCountries() {
-    axios.get('/api/countries').then(response => {
-      this.setState({ countries: response.data }, this._getChoices)
-    });
+    this.props.fetchCountries()
   }
 
   _getChoices() {
@@ -83,7 +77,7 @@ class App extends Component {
       },
       resultMessage: null
     });
-    this._getCountries();
+    this.props.fetchCountries()
   }
 
   render() {
