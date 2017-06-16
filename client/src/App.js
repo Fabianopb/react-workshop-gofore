@@ -111,8 +111,8 @@ class App extends Component {
           <div className="title-question">What country this flag belongs to?</div>
           { flagImage }
           { this.state.resultMessage ? (
-            <div>
-              <p>{ this.state.resultMessage }</p>
+            <div className="result-wrapper">
+              <div className="result-message">{ this.state.resultMessage }</div>
               <Button children={ 'Restart the game?' } onClick={ this._restartGame } />
             </div>
           ) : (
