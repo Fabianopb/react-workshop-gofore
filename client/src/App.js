@@ -35,56 +35,18 @@ const renderCurrentMessage = (  // eslint-disable-line no-unused-vars
 
 class App extends Component {
 
-  state = {
-    countries: {},
-    choices: [],
-    correctAnswer: {
-      code: null,
-      choice: null
-    },
-    resultMessage: null
-  };
-
   componentWillMount() {
     this.props.fetchCountries()
   }
 
-  _getChoices() {
-    const choices = [];
-    while (choices.length < 3) {
-      const randomCountry = getRandomCountry(this.state.countries);
-      if (choices.map(choice => choice.code).indexOf(randomCountry.code) === -1) {
-        choices.push(randomCountry);
-      }
-    }
-    this.setState({ choices });
-    const randomIndex = Math.floor(Math.random() * choices.length);
-    this.setState({ correctAnswer: choices[randomIndex] });
-  }
-
-  _handleCountrySelection = (countryCode) => {
-    const resultMessage = countryCode === this.state.correctAnswer.code ? 'Correct answer!' : 'Wrong answer!';
-    this.setState({ resultMessage });
-  }
-
   _restartGame = () => {
-    this.setState({
-      countries: {},
-      choices: [],
-      correctAnswer: {
-        code: null,
-        choice: null
-      },
-      resultMessage: null
-    });
     this.props.fetchCountries()
   }
 
   render() {
-
-    const { code, choice } = this.state.correctAnswer;
-
-    const flagImage = this.state.correctAnswer.code ? (
+    const { correctAnswer } = this.props
+    const { code, choice } = correctAnswer
+    const flagImage = code ? (
         <img className="flag-image" src={ `/flags/${ code }.png` } alt={ choice[code] } />
     ) : null;
 
@@ -104,18 +66,17 @@ class App extends Component {
         <main>
           <div className="title-question">What country this flag belongs to?</div>
           { flagImage }
-          { this.state.resultMessage ? (
+          { this.props.resultMessage ? (
             <div className="result-wrapper">
-              <div className="result-message">{ this.state.resultMessage }</div>
-              <Button children={ 'Restart the game?' } onClick={ this._restartGame } />
+              <div className="result-message">{ this.props.resultMessage }</div>
+              <Button children={ 'Restart the game?' } onClick={ this.props.restartGame } />
             </div>
           ) : (
             <RadioPads
-              options={ this.state.choices.map(choice => choice.choice) }
-              handleSelection= { this._handleCountrySelection }
+              options={ this.props.choices.map(choice => choice.choice) }
+              handleSelection= { this.props.checkAnswer }
               />
           ) }
-          <button onClick={this.props.testActionCreator}>test action</button>
         </main>
       </div>
     )

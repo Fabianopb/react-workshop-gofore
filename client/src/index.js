@@ -12,8 +12,10 @@ import {
   take,
   takeEvery,
   call,
-  all
+  all,
+  select
 } from 'redux-saga/effects'
+import { getRandomCountry } from './ducks/rounds';
 // import reducer from './reducer.js'
 
 // import rootSaga from './sagas'
@@ -23,35 +25,77 @@ const middleware = [ sagaMiddleware ]
 const enhancers = []
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose
 
-function* testSaga() {
-  yield takeEvery('TEST_ACTION', () => console.log('yey'))
+const createChoices = (countries) => {
+  const choices = [];
+  while (choices.length < 3) {
+    const randomCountry = getRandomCountry(countries);
+    if (choices.map(choice => choice.code).indexOf(randomCountry.code) === -1) {
+      choices.push(randomCountry);
+    }
+  }
+  return choices
+}
+
+function* createChoicesSaga(countries) {
+
+  const choices = yield call(createChoices, countries)
+  const randomIndex = Math.floor(Math.random() * choices.length);
+  const correctAnswer = choices[randomIndex]
+
+  yield put(choicesCreated(choices))
+  yield put(correctAnswerSet(correctAnswer))
 }
 
 function* fetchCountriesSaga() {
   yield take('FETCH_COUNTRIES')
   const countries = yield call(() => axios.get('/api/countries'));    
   yield put(countriesLoaded(countries.data))
-  
-      // .then(response => {
-        // this.setState({ countries: response.data }, this._getChoices)
 
-      // axios.get('/api/countries').then(response => {
-    //   this.setState({ countries: response.data }, this._getChoices)
-    // });
+  yield call(createChoicesSaga, countries.data)
+
+  // console.log(choices, randomIndex)
 }
+
+function* handleCountrySelectionSaga() {
+  while(true) {
+    const { payload } = yield take('CHECK_ANSWER')
+
+    // console.log(countryCode)
+
+    const correctAnswer = yield select((state) => state.correctAnswer.code)
+
+    const resultMessage = payload === correctAnswer ? 
+      'Correct answer!' : 'Wrong answer!';
+
+    yield put(resultMessageSet(resultMessage))
+  }
+}
+
+function* resetChoicesSaga() {
+  const countries = yield select((state) => state.countries)
+  yield call(createChoicesSaga, countries)
+}
+
+function* restartGameSaga() {
+  yield takeEvery('GAME_RESTARTED', resetChoicesSaga)
+}
+
 
 function* rootSaga() {
   yield all([
-    testSaga(),
-    fetchCountriesSaga()
+    fetchCountriesSaga(),
+    handleCountrySelectionSaga(),
+    restartGameSaga()
   ])
 }
 
-const testActionCreator = () => {
-  return {
-    type: 'TEST_ACTION'
-  }
-}
+
+  // choices: [],
+  // correctAnswer: {
+  //   code: null,
+  //   choice: null
+  // },
+  // resultMessage: null
 
 const fetchCountries = () => {
   return {
@@ -63,6 +107,26 @@ const countriesLoaded = (payload) => {
   return { type: 'COUNTRIES_LOADED', payload }
 }
 
+const choicesCreated = (payload) => {
+  return { type: 'CHOICES_CREATED', payload }
+}
+
+const correctAnswerSet = (payload) => {
+  return { type: 'CORRECT_ANSWER_SET', payload }
+}
+
+const resultMessageSet = (payload) => {
+  return { type: 'RESULT_MESSAGE_SET', payload }
+}
+
+const checkAnswer = (payload) => {
+  // console.log(payload)
+  return { type: 'CHECK_ANSWER', payload }
+}
+
+const restartGame = () => {
+  return { type: 'GAME_RESTARTED' }
+}
 
 
 // setInterval(() => {
@@ -70,16 +134,13 @@ const countriesLoaded = (payload) => {
 // }, 3000)
 
 const initialState = {
-  test: 1,
-  countries: {}
-}
-
-const testReducer = (test = initialState.test, action) => {
-  if (action.type === 'TEST_ACTION') {
-    console.log('yea', test)
-    return test + 1
-  }
-  return test
+  countries: {},
+  choices: [],
+  correctAnswer: {
+    code: null,
+    choice: null
+  },
+  resultMessage: null
 }
 
 const countryReducer = (countries = initialState.countries, action) => {
@@ -89,9 +150,41 @@ const countryReducer = (countries = initialState.countries, action) => {
   return countries
 }
 
+const choicesReducer = (choices = initialState.choices, action) => {
+  if (action.type === 'CHOICES_CREATED') {
+    return action.payload
+  }
+  else if (action.type === 'GAME_RESTARTED') {
+    return initialState.choices
+  }
+  return choices
+}
+
+const correctAnswerReducer = (correctAnswer = initialState.correctAnswer, action) => {
+  if (action.type === 'CORRECT_ANSWER_SET') {
+    return action.payload
+  }
+  else if (action.type === 'GAME_RESTARTED') {
+    return initialState.correctAnswer
+  }
+  return correctAnswer
+}
+
+const resultMessageReducer = (resultMessage = initialState.resultMessage, action) => {
+  if (action.type === 'RESULT_MESSAGE_SET') {
+    return action.payload
+  }
+  else if (action.type === 'GAME_RESTARTED') {
+    return initialState.resultMessage
+  }
+  return resultMessage
+}
+
 const rootReducer = combineReducers({
-  test: testReducer,
-  countries: countryReducer
+  countries: countryReducer,
+  choices: choicesReducer,
+  correctAnswer: correctAnswerReducer,
+  resultMessage: resultMessageReducer
 })
 
 const store = createStore(
@@ -101,15 +194,18 @@ const store = createStore(
 
 const mapStateToProps = (state) => {
   return {
-    test: state.test,
-    countries: state.countries
+    countries: state.countries,
+    choices: state.choices,
+    correctAnswer: state.correctAnswer,
+    resultMessage: state.resultMessage
   }
 }
 
 const mapDispatchToProps = (dispatch) => 
   bindActionCreators({ 
-    testActionCreator,
-    fetchCountries
+    fetchCountries,
+    checkAnswer,
+    restartGame
   }, dispatch)
 
 const ConnectedApp = connect(mapStateToProps, mapDispatchToProps)(App)
