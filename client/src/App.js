@@ -1,5 +1,7 @@
-import React, {Component} from 'react'
-import './App.css'
+import React, {Component} from 'react';
+import axios from 'axios';
+import { getRandomCountry } from './ducks/rounds';
+import './App.css';
 
 // this is a little helper you can use if you like, or erase and make your own
 const renderCurrentMessage = (  // eslint-disable-line no-unused-vars
@@ -30,7 +32,30 @@ const renderCurrentMessage = (  // eslint-disable-line no-unused-vars
 }
 
 class App extends Component {
+
+  state = {
+    countries: {},
+    choices: null,
+    correctAnswer: null,
+    activeFlag: null
+  };
+
+  componentWillMount() {
+    axios.get('http://localhost:3000/api/countries').then(response => {
+      this.setState({ countries: response.data }, this._setRandomFlag)
+    });
+  }
+
+  _setRandomFlag() {
+    this.setState({ activeFlag: getRandomCountry(this.state.countries) });
+  }
+
   render() {
+
+    const flagImage = this.state.activeFlag ? (
+        <img src={ `http://localhost:3000/flags/${ this.state.activeFlag.code }.png` }></img>
+    ) : null;
+
     return (
       <div className='App'>
 
@@ -45,7 +70,7 @@ class App extends Component {
         <nav><h4 style={{color: '#fff'}}>Cool nav bar here</h4></nav>
 
         <main>
-          <h3>Please make me</h3>
+          { flagImage }
         </main>
       </div>
     )

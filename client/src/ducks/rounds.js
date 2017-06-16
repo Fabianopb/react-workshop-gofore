@@ -24,7 +24,7 @@
 
 const getRandomNum = max => Math.floor(Math.random() * max)
 
-const getRandomCountry = countries => {
+export const getRandomCountry = countries => {
   const keys = Object.keys(countries)
   const code = keys[getRandomNum(keys.length)]
   return {code, choice: {[code]: countries[code]}}
